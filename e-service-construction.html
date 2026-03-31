@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสรุปยอดเงินรับเหมาก่อสร้าง - Boonrodchoo House</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; }
+        @media print {
+            body { background-color: white; }
+            .no-print { display: none !important; }
+            .print-border-none { border: none !important; box-shadow: none !important; outline: none !important; padding: 0 !important; background: transparent !important; }
+            .print-container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
+        }
+        .exporting-image .no-print { display: none !important; }
+        .exporting-image .print-border-none { border: none !important; outline: none !important; background: transparent !important; }
+    </style>
+</head>
+<body>
+    
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        const App = () => {
+            const printRef = useRef();
+
+            const [projectInfo, setProjectInfo] = useState({
+                projectName: '',
+                customerName: '',
+                date: new Date().toISOString().split('T')[0]
+            });
+
+            const [ratePerSqm, setRatePerSqm] = useState(1500);
+            const [inSqmWorks, setInSqmWorks] = useState([
+                { id: 1, description: 'เทพื้น', width: 4.5, length: 8 }
+            ]);
+
+            const [outSqmWorks, setOutSqmWorks] = useState([
+                { id: 1, description: 'ทุบกำแพง', amount: 1200 },
+                { id: 2, description: 'ซิงค์เคาน์เตอร์ 2 ชุด', amount: 2000 }
+            ]);
+
+            const [advancedPayment, setAdvancedPayment] = useState(30000);
+            const [isExporting, setIsExporting] = useState(false);
+
+            const calculateInSqmTotal = () => {
+                return inSqmWorks.reduce((total, work) => {
+                    const area = (work.width || 0) * (work.length || 0);
+                    return total + (area * ratePerSqm);
+                }, 0);
+            };
+
+            const calculateOutSqmTotal = () => {
+                return outSqmWorks.reduce((total, work) => total + (Number(work.amount) || 0), 0);
+            };
+
+            const inSqmTotal = calculateInSqmTotal();
+            const outSqmTotal = calculateOutSqmTotal();
+            const grandTotal = inSqmTotal + outSqmTotal;
+            const remainingBalance = grandTotal - advancedPayment;
+
+            const addInSqmWork = () => setInSqmWorks([...inSqmWorks, { id: Date.now(), description: '', width: 0, length: 0 }]);
+            const removeInSqmWork = (id) => setInSqmWorks(inSqmWorks.filter(w => w.id !== id));
+            const updateInSqmWork = (id, field, value) => setInSqmWorks(inSqmWorks.map(w => w.id === id ? { ...w, [field]: value } : w));
+
+            const addOutSqmWork = () => setOutSqmWorks([...outSqmWorks, { id: Date.now(), description: '', amount: 0 }]);
+            const removeOutSqmWork = (id) => setOutSqmWorks(outSqmWorks.filter(w => w.id !== id));
+            const updateOutSqmWork = (id, field, value) => setOutSqmWorks(outSqmWorks.map(w => w.id === id ? { ...w, [field]: value } : w));
+
+            const formatMoney = (num) => Number(num).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const handleReset = () => {
+                if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมด?')) {
+                    setProjectInfo({ projectName: '', customerName: '', date: new Date().toISOString().split('T')[0] });
+                    setRatePerSqm(1500);
+                    setInSqmWorks([{ id: Date.now(), description: '', width: '', length: '' }]);
+                    setOutSqmWorks([{ id: Date.now() + 1, description: '', amount: '' }]);
+                    setAdvancedPayment(0);
+                }
+            };
+
+            const exportToExcel = () => {
+                let csv = '\uFEFF';
+                csv += `โครงการ: ${projectInfo.projectName},ลูกค้า: ${projectInfo.customerName},วันที่: ${projectInfo.date}\n\n`;
+                
+                csv += `งานในตารางเมตร (อัตรา ${ratePerSqm} บาท/ตร.ม.)\n`;
+                csv += `ที่,รายการ,กว้าง (ม.),ยาว (ม.),พื้นที่ (ตร.ม.),จำนวนเงิน (บาท)\n`;
+                inSqmWorks.forEach((work, index) => {
+                    const area = (work.width || 0) * (work.length || 0);
+                    const amount = area * ratePerSqm;
+                    csv += `${index + 1},${work.description},${work.width},${work.length},${area},${amount}\n`;
+                });
+                csv += `,,,รวมงานในตารางเมตร,,${inSqmTotal}\n\n`;
+
+                csv += `งานเพิ่มเติม (นอกตารางเมตร)\n`;
+                csv += `ที่,รายการ,,,,,จำนวนเงิน (บาท)\n`;
+                outSqmWorks.forEach((work, index) => {
+                    csv += `${index + 1},${work.description},,,,,${work.amount}\n`;
+                });
+                csv += `,,,รวมงานนอกตารางเมตร,,${outSqmTotal}\n\n`;
+
+                csv += `สรุปยอด\n`;
+                csv += `รวมทั้งสิ้น (นอก+ใน),,,,,${grandTotal}\n`;
+                csv += `เบิกแล้ว,,,,,${advancedPayment}\n`;
+                csv += `ยอดคงเหลือ,,,,,${remainingBalance}\n`;
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `สรุปยอด_${projectInfo.projectName || 'งานก่อสร้าง'}.csv`;
+                link.click();
+            };
+
+            const exportToPDF = () => {
+                setIsExporting(true);
+                setTimeout(() => {
+                    const element = printRef.current;
+                    element.classList.add('exporting-image');
+                    window.scrollTo(0, 0);
+
+                    const opt = {
+                        margin: 10,
+                        filename: `สรุปยอด_${projectInfo.projectName || 'งานก่อสร้าง'}.pdf`,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true, windowWidth: element.scrollWidth },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    };
+
+                    window.html2pdf().set(opt).from(element).save().then(() => {
+                        element.classList.remove('exporting-image');
+                        setIsExporting(false);
+                    });
+                }, 300);
+            };
+
+            const exportToPNG = () => {
+                setIsExporting(true);
+                setTimeout(() => {
+                    const element = printRef.current;
+                    element.classList.add('exporting-image');
+                    window.scrollTo(0, 0);
+                    
+                    window.html2canvas(element, { scale: 2, useCORS: true, windowWidth: element.scrollWidth, windowHeight: element.scrollHeight }).then(canvas => {
+                        const imgData = canvas.toDataURL('image/png');
+                        const link = document.createElement('a');
+                        link.href = imgData;
+                        link.download = `สรุปยอด_${projectInfo.projectName || 'งานก่อสร้าง'}.png`;
+                        link.click();
+                        element.classList.remove('exporting-image');
+                        setIsExporting(false);
+                    });
+                }, 300);
+            };
+
+            return (
+                <div className="p-4 md:p-8">
+                    <div className="max-w-4xl mx-auto flex flex-col space-y-4">
+                        
+                        {/* ปุ่มกลับหน้าแรก */}
+                        <a href="index.html" className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700 transition no-print font-medium w-fit">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                            กลับหน้าแรก
+                        </a>
+
+                        {/* เครื่องมือ */}
+                        <div className="bg-white p-4 rounded-xl shadow-sm flex flex-wrap justify-between items-center gap-4 no-print">
+                            <h1 className="text-xl font-bold text-gray-800">ระบบสรุปยอดเงินรับเหมาก่อสร้าง</h1>
+                            <div className="flex flex-wrap gap-2">
+                                <button onClick={handleReset} className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-medium mr-2">🗑️ ล้างข้อมูล</button>
+                                <button onClick={exportToExcel} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">📥 Excel</button>
+                                <button onClick={exportToPDF} disabled={isExporting} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium disabled:opacity-50">📄 PDF</button>
+                                <button onClick={exportToPNG} disabled={isExporting} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50">🖼️ PNG</button>
+                            </div>
+                        </div>
+
+                        {/* กระดาษ */}
+                        <div ref={printRef} className="bg-white p-6 md:p-10 rounded-xl shadow-lg print-container">
+                            <div className="text-center mb-8">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">ใบสรุปยอดรับเหมาก่อสร้าง</h2>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-1">ชื่องาน/โครงการ</label>
+                                    {isExporting ? <div className="w-full p-2 text-gray-900">{projectInfo.projectName || '-'}</div> :
+                                    <input type="text" value={projectInfo.projectName} onChange={e => setProjectInfo({...projectInfo, projectName: e.target.value})} className="w-full border rounded-lg p-2 text-gray-900" placeholder="กรอกชื่องาน..." />}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-1">ชื่อลูกค้า</label>
+                                    {isExporting ? <div className="w-full p-2 text-gray-900">{projectInfo.customerName || '-'}</div> :
+                                    <input type="text" value={projectInfo.customerName} onChange={e => setProjectInfo({...projectInfo, customerName: e.target.value})} className="w-full border rounded-lg p-2 text-gray-900" placeholder="กรอกชื่อลูกค้า..." />}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-600 mb-1">วันที่</label>
+                                    {isExporting ? <div className="w-full p-2 text-gray-900">{projectInfo.date ? new Date(projectInfo.date).toLocaleDateString('th-TH') : '-'}</div> :
+                                    <input type="date" value={projectInfo.date} onChange={e => setProjectInfo({...projectInfo, date: e.target.value})} className="w-full border rounded-lg p-2 text-gray-900" />}
+                                </div>
+                            </div>
+
+                            {/* ส่วนที่ 1 */}
+                            <div className="mb-10">
+                                <div className="flex justify-between items-end mb-4 border-b pb-2">
+                                    <h3 className="text-lg font-bold text-blue-800">1. งานในตารางเมตร</h3>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium">ราคาต่อ ตร.ม. :</span>
+                                        {isExporting ? <span className="w-24 p-1 text-right font-bold text-gray-900">{formatMoney(ratePerSqm)}</span> :
+                                        <input type="number" value={ratePerSqm} onChange={e => setRatePerSqm(Number(e.target.value))} className="w-24 border rounded-md p-1 text-right font-bold" />}
+                                        <span className="text-sm">บาท</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="overflow-x-auto">
+                                    <table className="w-full mb-4 text-sm md:text-base min-w-[600px]">
+                                        <thead>
+                                            <tr className="bg-gray-50 text-gray-700 text-left border-b">
+                                                <th className="py-2 px-2 w-12 text-center">ที่</th>
+                                                <th className="py-2 px-2">รายการ</th>
+                                                <th className="py-2 px-2 w-24 text-center">กว้าง(ม.)</th>
+                                                <th className="py-2 px-2 w-24 text-center">ยาว(ม.)</th>
+                                                <th className="py-2 px-2 w-28 text-center">พื้นที่(ตร.ม.)</th>
+                                                <th className="py-2 px-2 w-32 text-right">เงิน(บาท)</th>
+                                                <th className="py-2 px-2 w-12 no-print"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {inSqmWorks.map((work, idx) => {
+                                                const area = (work.width || 0) * (work.length || 0);
+                                                const amount = area * ratePerSqm;
+                                                return (
+                                                    <tr key={work.id} className="border-b border-gray-100">
+                                                        <td className="py-2 px-2 text-center text-gray-500">{idx + 1}</td>
+                                                        <td className="py-2 px-2">
+                                                            {isExporting ? <div className="w-full p-1">{work.description || '-'}</div> :
+                                                            <input type="text" value={work.description} onChange={e => updateInSqmWork(work.id, 'description', e.target.value)} className="w-full border-gray-200 border rounded p-1" placeholder="รายการ" />}
+                                                        </td>
+                                                        <td className="py-2 px-2">
+                                                            {isExporting ? <div className="w-full p-1 text-center">{work.width || 0}</div> :
+                                                            <input type="number" step="0.1" value={work.width !== undefined ? work.width : ''} onChange={e => updateInSqmWork(work.id, 'width', e.target.value === '' ? '' : Number(e.target.value))} className="w-full border-gray-200 border rounded p-1 text-center" placeholder="0" />}
+                                                        </td>
+                                                        <td className="py-2 px-2">
+                                                            {isExporting ? <div className="w-full p-1 text-center">{work.length || 0}</div> :
+                                                            <input type="number" step="0.1" value={work.length !== undefined ? work.length : ''} onChange={e => updateInSqmWork(work.id, 'length', e.target.value === '' ? '' : Number(e.target.value))} className="w-full border-gray-200 border rounded p-1 text-center" placeholder="0" />}
+                                                        </td>
+                                                        <td className="py-2 px-2 text-center font-medium bg-gray-50/50">{formatMoney(area)}</td>
+                                                        <td className="py-2 px-2 text-right font-medium text-blue-700">{formatMoney(amount)}</td>
+                                                        <td className="py-2 px-2 text-center no-print">
+                                                            <button onClick={() => removeInSqmWork(work.id)} className="text-red-500 font-bold hover:text-red-700">X</button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-blue-50/50 font-bold">
+                                                <td colSpan="5" className="py-3 px-4 text-right text-blue-900">รวมงานในตารางเมตร</td>
+                                                <td className="py-3 px-2 text-right text-blue-700">{formatMoney(inSqmTotal)}</td>
+                                                <td className="no-print"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <button onClick={addInSqmWork} className="no-print text-sm text-blue-600 font-medium p-2 border rounded hover:bg-blue-50">+ เพิ่มรายการใหม่</button>
+                            </div>
+
+                            {/* ส่วนที่ 2 */}
+                            <div className="mb-10">
+                                <div className="border-b pb-2 mb-4">
+                                    <h3 className="text-lg font-bold text-orange-800">2. งานเพิ่มเติม (นอกตารางเมตร)</h3>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full mb-4 text-sm md:text-base min-w-[500px]">
+                                        <thead>
+                                            <tr className="bg-gray-50 text-gray-700 text-left border-b">
+                                                <th className="py-2 px-2 w-12 text-center">ที่</th>
+                                                <th className="py-2 px-2">รายการ</th>
+                                                <th className="py-2 px-2 w-48 text-right">จำนวนเงิน (บาท)</th>
+                                                <th className="py-2 px-2 w-12 no-print"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {outSqmWorks.map((work, idx) => (
+                                                <tr key={work.id} className="border-b border-gray-100">
+                                                    <td className="py-2 px-2 text-center text-gray-500">{idx + 1}</td>
+                                                    <td className="py-2 px-2">
+                                                        {isExporting ? <div className="w-full p-1">{work.description || '-'}</div> :
+                                                        <input type="text" value={work.description} onChange={e => updateOutSqmWork(work.id, 'description', e.target.value)} className="w-full border-gray-200 border rounded p-1" placeholder="รายการ" />}
+                                                    </td>
+                                                    <td className="py-2 px-2 text-right">
+                                                        {isExporting ? <div className="w-full p-1 text-right font-medium text-orange-700">{formatMoney(work.amount || 0)}</div> :
+                                                        <input type="number" value={work.amount !== undefined ? work.amount : ''} onChange={e => updateOutSqmWork(work.id, 'amount', e.target.value === '' ? '' : Number(e.target.value))} className="w-full border-gray-200 border rounded p-1 text-right font-medium text-orange-700" placeholder="0" />}
+                                                    </td>
+                                                    <td className="py-2 px-2 text-center no-print">
+                                                        <button onClick={() => removeOutSqmWork(work.id)} className="text-red-500 font-bold hover:text-red-700">X</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-orange-50/50 font-bold">
+                                                <td colSpan="2" className="py-3 px-4 text-right text-orange-900">รวมงานเพิ่มเติม</td>
+                                                <td className="py-3 px-2 text-right text-orange-700">{formatMoney(outSqmTotal)}</td>
+                                                <td className="no-print"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <button onClick={addOutSqmWork} className="no-print text-sm text-orange-600 font-medium p-2 border rounded hover:bg-orange-50">+ เพิ่มรายการใหม่</button>
+                            </div>
+
+                            {/* ส่วนที่ 3 */}
+                            <div className="mt-8 pt-6 border-t-2 border-gray-800">
+                                <h3 className="text-xl font-bold text-gray-900 mb-6">3. สรุปยอดรวม</h3>
+                                <div className="max-w-md ml-auto space-y-3">
+                                    <div className="flex justify-between items-center text-lg">
+                                        <span className="font-medium text-gray-600">รวมทั้งสิ้น (นอก + ใน)</span>
+                                        <span className="font-bold text-gray-900">{formatMoney(grandTotal)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-lg bg-green-50 p-2 rounded-lg -mx-2 px-2">
+                                        <span className="font-medium text-gray-600">เบิกแล้ว</span>
+                                        {isExporting ? <span className="w-32 text-right font-bold text-green-700">{formatMoney(advancedPayment)}</span> :
+                                        <input type="number" value={advancedPayment !== undefined ? advancedPayment : ''} onChange={e => setAdvancedPayment(e.target.value === '' ? '' : Number(e.target.value))} className="w-32 text-right bg-transparent border-b border-green-300 font-bold text-green-700 focus:outline-none focus:border-green-600" placeholder="0" />}
+                                    </div>
+                                    <div className="flex justify-between items-center text-2xl pt-3 border-t border-gray-300">
+                                        <span className="font-bold text-gray-900">ยอดคงเหลือ</span>
+                                        <span className="font-black text-red-600">{formatMoney(remainingBalance)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="mt-24 pt-8 grid grid-cols-2 gap-8 text-center hidden print:grid exporting-image:grid">
+                                <div><div className="w-48 border-b border-gray-800 mx-auto mb-2"></div><p className="text-gray-600">ผู้รับเหมา</p></div>
+                                <div><div className="w-48 border-b border-gray-800 mx-auto mb-2"></div><p className="text-gray-600">ผู้ว่าจ้าง (ลูกค้า)</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

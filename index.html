@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boonrodchoo House - Construction Services</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme1: '#33CCFF',
+                        theme2: '#00BFFF',
+                        theme3: '#0099FF',
+                        theme4: '#1E90FF',
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <a href="index.html" class="flex-shrink-0 flex items-center">
+                    <img class="h-16 w-auto rounded-full shadow-sm" src="logo.jpg" alt="Boonrodchoo House Logo">
+                    <span class="ml-3 text-2xl font-bold text-theme4 hidden sm:block">BOONRODCHOO HOUSE</span>
+                </a>
+                
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="index.html" class="text-theme4 font-semibold hover:text-theme2 transition">หน้าแรก</a>
+                    <a href="#" class="text-gray-600 hover:text-theme3 transition">บริการของเรา</a>
+                    <a href="#" class="text-gray-600 hover:text-theme3 transition">ผลงาน</a>
+                    
+                    <div class="relative group">
+                        <button class="text-gray-600 font-medium hover:text-theme3 flex items-center transition py-2">
+                            E-Service
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div class="absolute left-0 mt-0 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200">
+                            <div class="py-1" role="menu">
+                                <a href="e-service-construction.html" class="block px-4 py-3 text-sm text-gray-700 hover:bg-theme1 hover:text-white">ระบบสรุปยอดก่อสร้าง</a>
+                                <a href="e-service-worker.html" class="block px-4 py-3 text-sm text-gray-700 hover:bg-theme1 hover:text-white">ระบบสรุปยอดรายคน</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <a href="#" class="text-gray-600 hover:text-theme3 transition">ติดต่อเรา</a>
+                </nav>
+
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-theme4 hover:text-theme3 focus:outline-none">
+                        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="index.html" class="block px-3 py-2 rounded-md text-base font-medium text-theme4 bg-theme1 bg-opacity-10">หน้าแรก</a>
+                <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-theme3 hover:bg-gray-50">บริการของเรา</a>
+                <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-theme3 hover:bg-gray-50">ผลงาน</a>
+                <div class="px-3 py-2 font-medium text-gray-500">E-Service</div>
+                <a href="e-service-construction.html" class="block px-6 py-2 text-sm text-gray-600 hover:text-theme4">↳ ระบบสรุปยอดก่อสร้าง</a>
+                <a href="e-service-worker.html" class="block px-6 py-2 text-sm text-gray-600 hover:text-theme4">↳ ระบบสรุปยอดรายคน</a>
+                <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-theme3 hover:bg-gray-50">ติดต่อเรา</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <div class="relative bg-theme4">
+            <div class="absolute inset-0 bg-gradient-to-r from-theme4 to-theme2 opacity-90"></div>
+            <div class="relative max-w-7xl mx-auto py-24 px-4 sm:py-32 sm:px-6 lg:px-8 text-center">
+                <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+                    บริการรับเหมาก่อสร้างครบวงจร
+                </h1>
+                <p class="mt-6 max-w-2xl mx-auto text-xl text-theme1">
+                    มั่นใจในคุณภาพ มาตรฐานความปลอดภัย บริหารงานด้วยความเป็นมืออาชีพ พร้อมระบบเช็คยอดออนไลน์สำหรับลูกค้าและทีมงาน
+                </p>
+                <div class="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+                    <a href="#" class="px-8 py-3 border border-transparent text-base font-medium rounded-md text-theme4 bg-white hover:bg-gray-50 transition shadow-lg">
+                        ดูผลงานของเรา
+                    </a>
+                    <a href="e-service-construction.html" class="px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-theme3 hover:bg-theme2 transition shadow-lg border-white">
+                        เข้าสู่ระบบ E-Service
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-900 text-white py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-theme1 mb-2 font-semibold">BOONRODCHOO HOUSE</p>
+            <p class="text-sm text-gray-400">&copy; 2026 Boonrodchoo House Construction Services. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            var menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+    </script>
+</body>
+</html>
