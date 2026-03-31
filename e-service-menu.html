@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Service Menu - Boonrodchoo House</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme1: '#33CCFF',
+                        theme2: '#00BFFF',
+                        theme3: '#0099FF',
+                        theme4: '#1E90FF',
+                    },
+                    fontFamily: {
+                        sans: ['Sarabun', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <a href="index.html" class="flex-shrink-0 flex items-center">
+                    <img class="h-16 w-auto rounded-full shadow-sm" src="logo.jpg" alt="Boonrodchoo House Logo">
+                    <span class="ml-3 text-2xl font-bold text-theme4 hidden sm:block">BOONRODCHOO HOUSE</span>
+                </a>
+                
+                <nav class="hidden md:flex space-x-8 items-center">
+                    <a href="index.html" class="text-gray-600 font-semibold hover:text-theme2 transition">หน้าแรก</a>
+                    <a href="#" class="text-gray-600 hover:text-theme3 transition">บริการของเรา</a>
+                    <a href="#" class="text-gray-600 hover:text-theme3 transition">ผลงาน</a>
+                    <a href="e-service-menu.html" class="text-theme4 font-medium hover:text-theme3 transition py-2">E-Service</a>
+                    <a href="#" class="text-gray-600 hover:text-theme3 transition">ติดต่อเรา</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow bg-[#f8f9fa]">
+        
+        <div class="bg-[#3a4750] py-16 relative overflow-hidden shadow-inner">
+            <div class="absolute top-0 left-0 w-full h-full opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, #ffffff 20px, #ffffff 40px);"></div>
+            <h1 class="relative text-center text-5xl md:text-6xl font-medium text-white tracking-wide" style="font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;">
+                E-Service
+            </h1>
+        </div>
+
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 text-center">
+                
+                <a href="e-service-construction.html" class="group flex flex-col items-center p-8 bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                    <div class="w-64 h-64 flex items-center justify-center mb-6">
+                        <img src="house.png" alt="ระบบสรุปยอดก่อสร้าง" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-300" onerror="this.src='https://cdn-icons-png.flaticon.com/512/619/619153.png'">
+                    </div>
+                    <h2 class="text-2xl font-medium text-[#2980b9] underline underline-offset-8 decoration-2 group-hover:text-theme4 transition-colors">
+                        ระบบสรุปยอดก่อสร้าง
+                    </h2>
+                </a>
+
+                <a href="e-service-worker.html" class="group flex flex-col items-center p-8 bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                    <div class="w-64 h-64 flex items-center justify-center mb-6">
+                        <img src="workers.png" alt="ระบบสรุปยอดรายคน" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-300" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3282/3282408.png'">
+                    </div>
+                    <h2 class="text-2xl font-medium text-[#2980b9] underline underline-offset-8 decoration-2 group-hover:text-theme4 transition-colors">
+                        ระบบสรุปยอดรายคน
+                    </h2>
+                </a>
+
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-gray-900 text-white py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-theme1 mb-2 font-semibold">BOONRODCHOO HOUSE</p>
+            <p class="text-sm text-gray-400">&copy; 2026 Boonrodchoo House Construction Services. All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
