@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบริหารจัดการคนงานและเช็คชื่อ</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { --primary: #2c3e50; --secondary: #34495e; --accent: #3498db; --bg: #f4f6f9; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--bg); color: #333; display: flex; height: 100vh; overflow: hidden; }
+        .hidden { display: none !important; }
+        
+        /* Login Screen */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .login-box { background: white; padding: 40px; border-radius: 8px; width: 300px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .login-box h2 { margin-top: 0; text-align: center; color: var(--primary); }
+        .login-box input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .login-box button { width: 100%; padding: 10px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        
+        /* Layout */
+        #sidebar { width: 250px; background: var(--primary); color: white; display: flex; flex-direction: column; }
+        #sidebar h2 { text-align: center; padding: 20px 0; margin: 0; background: #1a252f; font-size: 20px;}
+        .nav-item { padding: 15px 20px; cursor: pointer; border-bottom: 1px solid var(--secondary); transition: 0.3s; }
+        .nav-item:hover, .nav-item.active { background: var(--accent); }
+        #main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        
+        /* Cards & Dashboard */
+        .dashboard-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; }
+        .card h3 { margin: 0; font-size: 14px; color: #7f8c8d; }
+        .card .value { font-size: 32px; font-weight: bold; margin: 10px 0 0; }
+        .chart-container { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 500px; margin: 0 auto; }
+
+        /* Tables & Forms */
+        .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border-bottom: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+        input[type="text"], input[type="date"] { padding: 10px; border: 1px solid #ddd; border-radius: 4px; flex: 1; }
+        
+        /* Buttons */
+        button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-primary { background: var(--accent); }
+        .btn-danger { background: #e74c3c; }
+        .btn-success { background: #2ecc71; }
+        .btn-warning { background: #f1c40f; color: #333;}
+        
+        select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <h2>เข้าสู่ระบบ</h2>
+        <input type="text" id="login-user" placeholder="Username">
+        <input type="password" id="login-pass" placeholder="Password">
+        <button onclick="login()">เข้าสู่ระบบ</button>
+        <p id="login-err" style="color: red; text-align: center; display: none; margin-top:10px;">ข้อมูลไม่ถูกต้อง</p>
+    </div>
+</div>
+
+<div id="app" class="hidden" style="width: 100%; display: flex; height: 100vh;">
+    <div id="sidebar">
+        <h2>ระบบจัดการคนงาน</h2>
+        <div class="nav-item active" onclick="nav('dashboard')">📊 แดชบอร์ด (หน้าหลัก)</div>
+        <div class="nav-item" onclick="nav('workers')">👥 จัดการข้อมูลคนงาน</div>
+        <div class="nav-item" onclick="nav('attendance')">📝 เช็คชื่อประจำวัน</div>
+        <div class="nav-item" onclick="nav('reports')">📈 รายงาน & ส่งออก</div>
+        <div class="nav-item" onclick="nav('settings')">⚙️ ตั้งค่าระบบ</div>
+        <div class="nav-item" style="margin-top: auto; background: #c0392b;" onclick="logout()">🚪 ออกจากระบบ</div>
+    </div>
+
+    <div id="main-content">
+        
+        <div id="page-dashboard" class="page">
+            <h2>ภาพรวมประจำวัน (<span id="dash-date"></span>)</h2>
+            <div class="dashboard-cards">
+                <div class="card" style="border-bottom: 4px solid #2ecc71;"><h3>มาทำงาน</h3><div class="value" id="count-present">0</div></div>
+                <div class="card" style="border-bottom: 4px solid #e74c3c;"><h3>ขาด</h3><div class="value" id="count-absent">0</div></div>
+                <div class="card" style="border-bottom: 4px solid #f1c40f;"><h3>ลา</h3><div class="value" id="count-leave">0</div></div>
+                <div class="card" style="border-bottom: 4px solid #e67e22;"><h3>มาสาย/ครึ่งวัน</h3><div class="value" id="count-late">0</div></div>
+            </div>
+            <div class="chart-container">
+                <canvas id="attendanceChart"></canvas>
+            </div>
+        </div>
+
+        <div id="page-workers" class="page hidden">
+            <h2>จัดการข้อมูลคนงาน</h2>
+            <div class="panel">
+                <div class="input-group">
+                    <input type="text" id="new-worker-name" placeholder="ชื่อ-นามสกุล คนงาน">
+                    <input type="text" id="new-worker-pos" placeholder="ตำแหน่ง / แผนก">
+                    <button class="btn-primary" onclick="addWorker()">+ เพิ่มรายชื่อ</button>
+                </div>
+                <table>
+                    <thead><tr><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>ตำแหน่ง</th><th>จัดการ</th></tr></thead>
+                    <tbody id="worker-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="page-attendance" class="page hidden">
+            <h2>เช็คชื่อประจำวัน</h2>
+            <div class="panel">
+                <p><strong>วันที่: </strong> <input type="date" id="att-date" onchange="loadAttendance()"></p>
+                <table>
+                    <thead><tr><th>ชื่อ-นามสกุล</th><th>สถานะ</th></tr></thead>
+                    <tbody id="att-table-body"></tbody>
+                </table>
+                <br>
+                <button class="btn-primary" onclick="saveAttendance()">💾 บันทึกการเช็คชื่อ</button>
+            </div>
+        </div>
+
+        <div id="page-reports" class="page hidden">
+            <h2>รายงานสรุปเวลาทำงาน (แบบช่วงเวลา)</h2>
+            <div class="panel">
+                <div class="input-group">
+                    ตั้งแต่วันที่: <input type="date" id="report-start-date" onchange="loadReport()">
+                    ถึงวันที่: <input type="date" id="report-end-date" onchange="loadReport()">
+                    <button class="btn-success" onclick="exportPNG()">ส่งออก .PNG</button>
+                    <button class="btn-success" onclick="exportPDF()">ส่งออก .PDF</button>
+                </div>
+                <div id="report-content" style="background: white; padding: 20px;">
+                    <h3 style="text-align: center;">สรุปเวลาทำงาน ตั้งแต่วันที่ <span id="display-report-start"></span> ถึง <span id="display-report-end"></span></h3>
+                    <table id="report-table">
+                        <thead>
+                            <tr>
+                                <th>ลำดับ</th>
+                                <th>ชื่อ-นามสกุล</th>
+                                <th>ตำแหน่ง</th>
+                                <th style="text-align:center;">มา (วัน)</th>
+                                <th style="text-align:center;">ขาด (วัน)</th>
+                                <th style="text-align:center;">ลา (วัน)</th>
+                                <th style="text-align:center;">สาย/ครึ่งวัน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-settings" class="page hidden">
+            <h2>ตั้งค่าระบบ</h2>
+            <div class="panel">
+                <h3>จัดการสิทธิ์ผู้ใช้งาน (Admin)</h3>
+                <div class="input-group">
+                    <input type="text" id="new-admin-user" placeholder="Username">
+                    <input type="password" id="new-admin-pass" placeholder="Password">
+                    <button class="btn-primary" onclick="addAdmin()">เพิ่มผู้ดูแลระบบ</button>
+                </div>
+                <table>
+                    <thead><tr><th>Username</th><th>จัดการ</th></tr></thead>
+                    <tbody id="admin-table-body"></tbody>
+                </table>
+            </div>
+            <div class="panel" style="border-left: 4px solid #e74c3c;">
+                <h3>อันตราย (Danger Zone)</h3>
+                <button class="btn-danger" onclick="clearAllData()">ลบข้อมูลทั้งหมดในระบบ (Reset)</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    let chartInstance = null;
+    const statuses = ['มาทำงาน', 'ขาด', 'ลา', 'มาสาย', 'ครึ่งวัน'];
+
+    // --- เริ่มต้นระบบ ---
+    window.onload = () => {
+        initDB();
+        
+        // กำหนดวันที่เริ่มต้นเป็นวันปัจจุบัน
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('att-date').value = today;
+        document.getElementById('report-start-date').value = today;
+        document.getElementById('report-end-date').value = today;
+
+        if(sessionStorage.getItem('isLoggedIn') === 'true') {
+            showApp();
+        }
+    };
+
+    function initDB() {
+        if(!localStorage.getItem('hr_workers')) localStorage.setItem('hr_workers', JSON.stringify([]));
+        if(!localStorage.getItem('hr_records')) localStorage.setItem('hr_records', JSON.stringify({}));
+        if(!localStorage.getItem('hr_admins')) {
+            localStorage.setItem('hr_admins', JSON.stringify([{user: 'admin', pass: 'admin1t'}]));
+        }
+    }
+
+    // --- ระบบ Login / Logout ---
+    function login() {
+        const u = document.getElementById('login-user').value;
+        const p = document.getElementById('login-pass').value;
+        const admins = JSON.parse(localStorage.getItem('hr_admins'));
+        
+        const valid = admins.find(a => a.user === u && a.pass === p);
+        if(valid) {
+            sessionStorage.setItem('isLoggedIn', 'true');
+            document.getElementById('login-user').value = '';
+            document.getElementById('login-pass').value = '';
+            document.getElementById('login-err').style.display = 'none';
+            showApp();
+        } else {
+            document.getElementById('login-err').style.display = 'block';
+        }
+    }
+
+    function logout() {
+        sessionStorage.removeItem('isLoggedIn');
+        document.getElementById('app').classList.add('hidden');
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('login-screen').style.display = 'flex';
+    }
+
+    function showApp() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app').classList.remove('hidden');
+        nav('dashboard');
+    }
+
+    // --- ระบบ Navigation ---
+    function nav(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+        document.getElementById('page-' + pageId).classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        event.currentTarget.classList?.add('active');
+
+        if(pageId === 'dashboard') loadDashboard();
+        if(pageId === 'workers') loadWorkers();
+        if(pageId === 'attendance') loadAttendance();
+        if(pageId === 'reports') loadReport();
+        if(pageId === 'settings') loadSettings();
+    }
+
+    // --- 1. Dashboard ---
+    function loadDashboard() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('dash-date').innerText = today;
+        
+        const records = JSON.parse(localStorage.getItem('hr_records'))[today] || {};
+        let counts = { 'มาทำงาน': 0, 'ขาด': 0, 'ลา': 0, 'มาสาย': 0, 'ครึ่งวัน':0 };
+        
+        Object.values(records).forEach(status => {
+            if(counts[status] !== undefined) counts[status]++;
+        });
+
+        document.getElementById('count-present').innerText = counts['มาทำงาน'];
+        document.getElementById('count-absent').innerText = counts['ขาด'];
+        document.getElementById('count-leave').innerText = counts['ลา'];
+        document.getElementById('count-late').innerText = counts['มาสาย'] + counts['ครึ่งวัน'];
+
+        renderChart(counts);
+    }
+
+    function renderChart(counts) {
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+        
+        chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['มาทำงาน', 'ขาด', 'ลา', 'มาสาย/ครึ่งวัน'],
+                datasets: [{
+                    data: [counts['มาทำงาน'], counts['ขาด'], counts['ลา'], counts['มาสาย']+counts['ครึ่งวัน']],
+                    backgroundColor: ['#2ecc71', '#e74c3c', '#f1c40f', '#e67e22']
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    // --- 2. Worker Management ---
+    function loadWorkers() {
+        const workers = JSON.parse(localStorage.getItem('hr_workers'));
+        const tbody = document.getElementById('worker-table-body');
+        tbody.innerHTML = '';
+        workers.forEach(w => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>EMP-${w.id}</td>
+                    <td>${w.name}</td>
+                    <td>${w.pos || '-'}</td>
+                    <td>
+                        <button class="btn-danger" onclick="delWorker(${w.id})">ลบ</button>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    function addWorker() {
+        const name = document.getElementById('new-worker-name').value.trim();
+        const pos = document.getElementById('new-worker-pos').value.trim();
+        if(!name) return alert('กรุณาใส่ชื่อ');
+        
+        let workers = JSON.parse(localStorage.getItem('hr_workers'));
+        workers.push({ id: Date.now(), name, pos });
+        localStorage.setItem('hr_workers', JSON.stringify(workers));
+        
+        document.getElementById('new-worker-name').value = '';
+        document.getElementById('new-worker-pos').value = '';
+        loadWorkers();
+    }
+
+    function delWorker(id) {
+        if(!confirm('ยืนยันการลบพนักงาน?')) return;
+        let workers = JSON.parse(localStorage.getItem('hr_workers')).filter(w => w.id !== id);
+        localStorage.setItem('hr_workers', JSON.stringify(workers));
+        loadWorkers();
+    }
+
+    // --- 3. Attendance ---
+    function loadAttendance() {
+        const date = document.getElementById('att-date').value;
+        const workers = JSON.parse(localStorage.getItem('hr_workers'));
+        const allRecords = JSON.parse(localStorage.getItem('hr_records'));
+        const todayRec = allRecords[date] || {};
+
+        const tbody = document.getElementById('att-table-body');
+        tbody.innerHTML = '';
+
+        if(workers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2">ไม่มีข้อมูลคนงาน ไปที่เมนูจัดการคนงานก่อน</td></tr>';
+            return;
+        }
+
+        workers.forEach(w => {
+            const currentStatus = todayRec[w.id] || 'มาทำงาน'; 
+            let opts = statuses.map(s => `<option value="${s}" ${s === currentStatus ? 'selected':''}>${s}</option>`).join('');
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td>${w.name}</td>
+                    <td>
+                        <select id="status-${w.id}" class="status-select" style="width: 100%; max-width:200px;">
+                            ${opts}
+                        </select>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    function saveAttendance() {
+        const date = document.getElementById('att-date').value;
+        const workers = JSON.parse(localStorage.getItem('hr_workers'));
+        let allRecords = JSON.parse(localStorage.getItem('hr_records'));
+        
+        if(!allRecords[date]) allRecords[date] = {};
+        
+        workers.forEach(w => {
+            const val = document.getElementById(`status-${w.id}`).value;
+            allRecords[date][w.id] = val;
+        });
+
+        localStorage.setItem('hr_records', JSON.stringify(allRecords));
+        alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
+    }
+
+    // --- 4. Reports & Export (แก้ไขเป็นเลือกช่วงวันที่) ---
+    // ฟังก์ชันช่วยหา Array ของวันที่ในช่วงที่เลือก
+    function getDatesInRange(startDate, endDate) {
+        const date = new Date(startDate);
+        const end = new Date(endDate);
+        const dates = [];
+        while (date <= end) {
+            dates.push(new Date(date).toISOString().split('T')[0]);
+            date.setDate(date.getDate() + 1);
+        }
+        return dates;
+    }
+
+    function loadReport() {
+        const startDateStr = document.getElementById('report-start-date').value;
+        const endDateStr = document.getElementById('report-end-date').value;
+        
+        if(!startDateStr || !endDateStr) return; // รอให้เลือกครบก่อน
+
+        document.getElementById('display-report-start').innerText = startDateStr;
+        document.getElementById('display-report-end').innerText = endDateStr;
+        
+        const workers = JSON.parse(localStorage.getItem('hr_workers')) || [];
+        const allRecords = JSON.parse(localStorage.getItem('hr_records')) || {};
+
+        const dateRange = getDatesInRange(startDateStr, endDateStr);
+        const tbody = document.getElementById('report-table-body');
+        tbody.innerHTML = '';
+
+        if(workers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">ไม่มีข้อมูลคนงาน</td></tr>';
+            return;
+        }
+
+        // วนลูปรายชื่อคนงานเพื่อสรุปยอดในแต่ละวัน
+        workers.forEach((w, index) => {
+            let counts = { 'มาทำงาน': 0, 'ขาด': 0, 'ลา': 0, 'มาสาย': 0, 'ครึ่งวัน': 0 };
+
+            dateRange.forEach(d => {
+                if (allRecords[d] && allRecords[d][w.id]) {
+                    counts[allRecords[d][w.id]]++;
+                }
+            });
+
+            const lateHalfCount = counts['มาสาย'] + counts['ครึ่งวัน'];
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${w.name}</td>
+                    <td>${w.pos || '-'}</td>
+                    <td style="text-align:center; color: #2ecc71; font-weight:bold;">${counts['มาทำงาน']}</td>
+                    <td style="text-align:center; color: #e74c3c; font-weight:bold;">${counts['ขาด']}</td>
+                    <td style="text-align:center; color: #f1c40f; font-weight:bold;">${counts['ลา']}</td>
+                    <td style="text-align:center; color: #e67e22; font-weight:bold;">${lateHalfCount}</td>
+                </tr>`;
+        });
+    }
+
+    function getExportFileName(ext) {
+        const start = document.getElementById('report-start-date').value;
+        const end = document.getElementById('report-end-date').value;
+        return `สรุปเวลาทำงาน_${start}_ถึง_${end}.${ext}`;
+    }
+
+    function exportPNG() {
+        const element = document.getElementById('report-content');
+        html2canvas(element, { scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = getExportFileName('png');
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    }
+
+    function exportPDF() {
+        const element = document.getElementById('report-content');
+        html2canvas(element, { scale: 2 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, pdfHeight - 20);
+            pdf.save(getExportFileName('pdf'));
+        });
+    }
+
+    // --- 5. Settings ---
+    function loadSettings() {
+        const admins = JSON.parse(localStorage.getItem('hr_admins'));
+        const tbody = document.getElementById('admin-table-body');
+        tbody.innerHTML = '';
+        admins.forEach(a => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${a.user}</td>
+                    <td>${a.user !== 'admin' ? `<button class="btn-danger" onclick="delAdmin('${a.user}')">ลบ</button>` : 'ค่าเริ่มต้น (ลบไม่ได้)'}</td>
+                </tr>`;
+        });
+    }
+
+    function addAdmin() {
+        const u = document.getElementById('new-admin-user').value.trim();
+        const p = document.getElementById('new-admin-pass').value.trim();
+        if(!u || !p) return alert('กรุณาใส่ข้อมูลให้ครบ');
+
+        let admins = JSON.parse(localStorage.getItem('hr_admins'));
+        if(admins.find(a => a.user === u)) return alert('Username นี้มีอยู่แล้ว');
+        
+        admins.push({user: u, pass: p});
+        localStorage.setItem('hr_admins', JSON.stringify(admins));
+        document.getElementById('new-admin-user').value = '';
+        document.getElementById('new-admin-pass').value = '';
+        loadSettings();
+    }
+
+    function delAdmin(user) {
+        if(!confirm('ยืนยันการลบแอดมินรายนี้?')) return;
+        let admins = JSON.parse(localStorage.getItem('hr_admins')).filter(a => a.user !== user);
+        localStorage.setItem('hr_admins', JSON.stringify(admins));
+        loadSettings();
+    }
+
+    function clearAllData() {
+        if(prompt('พิมพ์คำว่า "CONFIRM" เพื่อยืนยันการลบข้อมูลทั้งหมดในระบบ') === 'CONFIRM') {
+            localStorage.clear();
+            alert('ลบข้อมูลเรียบร้อย ระบบจะรีเฟรช');
+            location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>
