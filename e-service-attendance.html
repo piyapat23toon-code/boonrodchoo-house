@@ -59,6 +59,7 @@
         <input type="text" id="login-user" placeholder="Username">
         <input type="password" id="login-pass" placeholder="Password">
         <button onclick="login()">เข้าสู่ระบบ</button>
+        <button onclick="window.location.href='e-service-menu.html'" style="background: #95a5a6; margin-top: 10px;">⬅ กลับหน้าเมนู</button>
         <p id="login-err" style="color: red; text-align: center; display: none; margin-top:10px;">ข้อมูลไม่ถูกต้อง</p>
     </div>
 </div>
@@ -66,6 +67,8 @@
 <div id="app" class="hidden" style="width: 100%; display: flex; height: 100vh;">
     <div id="sidebar">
         <h2>ระบบจัดการคนงาน</h2>
+        <div class="nav-item" style="background: #1abc9c; border-bottom: 2px solid #16a085; text-align: center;" onclick="window.location.href='e-service-menu.html'">⬅ กลับหน้า E-Service</div>
+        
         <div class="nav-item active" onclick="nav('dashboard')">📊 แดชบอร์ด (หน้าหลัก)</div>
         <div class="nav-item" onclick="nav('workers')">👥 จัดการข้อมูลคนงาน</div>
         <div class="nav-item" onclick="nav('attendance')">📝 เช็คชื่อประจำวัน</div>
@@ -365,8 +368,7 @@
         alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
     }
 
-    // --- 4. Reports & Export (แก้ไขเป็นเลือกช่วงวันที่) ---
-    // ฟังก์ชันช่วยหา Array ของวันที่ในช่วงที่เลือก
+    // --- 4. Reports & Export ---
     function getDatesInRange(startDate, endDate) {
         const date = new Date(startDate);
         const end = new Date(endDate);
@@ -382,7 +384,7 @@
         const startDateStr = document.getElementById('report-start-date').value;
         const endDateStr = document.getElementById('report-end-date').value;
         
-        if(!startDateStr || !endDateStr) return; // รอให้เลือกครบก่อน
+        if(!startDateStr || !endDateStr) return; 
 
         document.getElementById('display-report-start').innerText = startDateStr;
         document.getElementById('display-report-end').innerText = endDateStr;
@@ -399,7 +401,6 @@
             return;
         }
 
-        // วนลูปรายชื่อคนงานเพื่อสรุปยอดในแต่ละวัน
         workers.forEach((w, index) => {
             let counts = { 'มาทำงาน': 0, 'ขาด': 0, 'ลา': 0, 'มาสาย': 0, 'ครึ่งวัน': 0 };
 
