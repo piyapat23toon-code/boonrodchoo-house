@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบริหารจัดการคนงานและเช็คชื่อ</title>
+    
     <link rel="icon" href="logo2.png" type="image/png">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -60,7 +62,9 @@
         <input type="text" id="login-user" placeholder="Username">
         <input type="password" id="login-pass" placeholder="Password">
         <button onclick="login()">เข้าสู่ระบบ</button>
-        <button onclick="window.location.href='e-service-menu.html'" style="background: #95a5a6; margin-top: 10px;">⬅ กลับหน้าเมนู</button>
+        
+        <button onclick="window.location.href='e-service-menu.html'" style="background: #95a5a6; margin-top: 10px;">⬅ กลับหน้าเมนู E-Service</button>
+        
         <p id="login-err" style="color: red; text-align: center; display: none; margin-top:10px;">ข้อมูลไม่ถูกต้อง</p>
     </div>
 </div>
@@ -68,7 +72,10 @@
 <div id="app" class="hidden" style="width: 100%; display: flex; height: 100vh;">
     <div id="sidebar">
         <h2>ระบบจัดการคนงาน</h2>
-        <div class="nav-item" style="background: #1abc9c; border-bottom: 2px solid #16a085; text-align: center;" onclick="window.location.href='e-service-menu.html'">⬅ กลับหน้า E-Service</div>
+        
+        <div class="nav-item" style="background: #1abc9c; border-bottom: 2px solid #16a085; text-align: center;" onclick="window.location.href='e-service-menu.html'">
+            ⬅ กลับหน้าเมนู E-Service
+        </div>
         
         <div class="nav-item active" onclick="nav('dashboard')">📊 แดชบอร์ด (หน้าหลัก)</div>
         <div class="nav-item" onclick="nav('workers')">👥 จัดการข้อมูลคนงาน</div>
